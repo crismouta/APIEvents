@@ -1,6 +1,5 @@
 package com.randstad.events.config.security;
 
-import com.cloudinary.Cloudinary;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,14 +15,15 @@ import org.springframework.security.oauth2.jwt.JwtDecoders;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import com.randstad.events.config.security.filters.CustomAuthenticationSuccessFilter;
+import com.randstad.events.infra.repositories.IUserRepository;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -32,6 +32,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    private final IUserRepository userRepository;
     @Value("${auth0.audience}")
     private String audience;
 
@@ -44,6 +45,10 @@ public class SecurityConfig {
     @Value("${spring.websecurity.debug:false}")
     boolean webSecurityDebug;
 
+    public SecurityConfig(IUserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -51,11 +56,15 @@ public class SecurityConfig {
                 .cors(withDefaults()) //por defecto spring va a buscar un bean con el nombre "corsConfigurationSource".
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
-                                .requestMatchers("/api/v1/events").hasAnyAuthority("client", "admin")
-                                .requestMatchers("/api/v1/create/**").hasAuthority("admin")
-                                .requestMatchers("/api/v1/myEvent/**").hasAuthority("client")
+                                .requestMatchers("api/events/v1/events/**").hasAnyAuthority("client", "admin")
+                                .requestMatchers("api/events/v1/create/**").hasAuthority("admin")
+                                .requestMatchers("/api/events/v1/myEvent/{userId}/{eventId}").hasAnyAuthority("client", "admin")
+                                .requestMatchers("/api/events/v1/removeMyEvent/{userId}/{eventId}").hasAnyAuthority("client", "admin")
+                                .requestMatchers("/api/events/v1/userByEmail").hasAnyAuthority("client", "admin")
+                                .requestMatchers("api/events/v1/users/**").hasAuthority("admin")
                                 .anyRequest().authenticated()
                 )
+                .addFilterAfter(new CustomAuthenticationSuccessFilter(userRepository), BearerTokenAuthenticationFilter.class)
                 .oauth2ResourceServer(oauth2ResourceServer ->
                         oauth2ResourceServer
                                 .jwt(jwt ->

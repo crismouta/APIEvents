@@ -1,25 +1,33 @@
 package com.randstad.events.domain.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Data;
+
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name="events")
-@Data
 public class Event {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 
     private String title;
-    @Column(length = 1000)
 
+    @Column(length = 1000)
     private String description;
 
     private String image;
+    @JsonIgnore
+    @ManyToMany(mappedBy = "events")
+    private Set<User> users = new HashSet<User>();
 
     public Event() {
+
     }
 
     public Event(String title, String description, String image) {
@@ -65,5 +73,13 @@ public class Event {
 
     public void setImage(String image) {
         this.image = image;
+    }
+
+    public void setUsers(Set<User> users) {
+        this.users = users;
+    }
+
+    public Set<User> getUsers() {
+        return users;
     }
 }

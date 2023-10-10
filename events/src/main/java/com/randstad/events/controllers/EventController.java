@@ -3,6 +3,7 @@ package com.randstad.events.controllers;
 import com.randstad.events.domain.models.Event;
 import com.randstad.events.domain.services.EventService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -10,7 +11,7 @@ import java.io.IOException;
 import java.util.List;
 
 @RestController
-@RequestMapping(path = "api/v1")
+@RequestMapping(path = "api/events/v1")
 public class EventController {
 
     private final EventService eventService;
@@ -21,6 +22,8 @@ public class EventController {
 
     @GetMapping("/events")
     public ResponseEntity<List<Event>> getAll(){
+        var userName = SecurityContextHolder.getContext().getAuthentication().getName();
+        System.out.println(userName);
         return ResponseEntity.ok(this.eventService.findAll());
     }
 
